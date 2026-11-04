@@ -41,6 +41,12 @@ Designed to handle heavy, resource-intensive operations without blocking HTTP re
 * **Containerization:** Docker & Docker Compose
 * **Code Quality:** Ruff, Strict Type Annotations
 
+## 🛡 Reliability & Production Considerations
+
+* **Zero-Timeout Queue Resilience:** Tuned Redis connection pooling parameters to prevent worker starvation and socket timeouts on long-polling operations with modern `redis-py` (v8+).
+* **Fault-Tolerant State Machine:** Database failures and queue dispatch errors are isolated using dedicated rollback sessions, guaranteeing that failed tasks are explicitly flagged as `FAILED` with diagnostics rather than hanging in `PENDING` or `PROCESSING`.
+* **Safe Session Management:** Async database sessions are properly separated between the HTTP web server and background worker threads to avoid transaction leakage.
+
 ## 📦 Quick Start
 
 ### 1. Clone & Configure
