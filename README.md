@@ -1,3 +1,5 @@
+**[English](README.md) | [Русский](README.ru.md)**
+
 # ⚡ Async Task Processor (FastAPI + Taskiq + Redis)
 
 High-performance, asynchronous background task processing service built with **Python 3.12**, **FastAPI**, **Taskiq**, **PostgreSQL**, and **Redis**.

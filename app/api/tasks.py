@@ -27,7 +27,6 @@ async def create_task(
     payload: TaskCreate,
     session: AsyncSession = Depends(get_async_session),
 ) -> Task:
-    # Создаём запись в БД со статусом PENDING
     db_task = Task(
         task_type=payload.task_type,
         payload=payload.payload,
@@ -36,14 +35,13 @@ async def create_task(
     await session.commit()
     await session.refresh(db_task)
 
-    # Отправляем в очередь Taskiq
     try:
         await process_background_task.kiq(
             task_id=db_task.id,
             payload=db_task.payload,
         )
     except Exception as exc:
-        # Если брокер недоступен, задача не должна висеть в PENDING.
+        # If the broker is unavailable, the task must not remain stuck in PENDING.
         db_task.status = TaskStatus.FAILED
         db_task.error_message = f"Failed to enqueue task: {exc}"
         await session.commit()

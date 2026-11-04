@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _mark_failed(task_id: UUID, reason: str) -> None:
-    """Переводит задачу в FAILED, чтобы она не зависла в PENDING/PROCESSING."""
+    """Mark a task as FAILED so it cannot get stuck in PENDING/PROCESSING."""
     async with async_session_maker() as session:
         task = await session.get(Task, task_id)
         if task is None:
@@ -28,14 +28,13 @@ async def _mark_failed(task_id: UUID, reason: str) -> None:
 
 @broker.task(
     task_name="process_background_task",
-    # Ограничиваем число повторов при падении воркера/БД.
+    # Cap the number of retries when the worker or database fails.
     max_retries=settings.TASK_MAX_RETRIES,
 )
 async def process_background_task(task_id: UUID, payload: dict) -> dict:
     logger.info(f"Starting processing task {task_id}")
 
     async with async_session_maker() as session:
-        # 1. Получаем задачу и переводим в PROCESSING
         stmt = select(Task).where(Task.id == task_id)
         result = await session.execute(stmt)
         task = result.scalar_one_or_none()
@@ -47,9 +46,8 @@ async def process_background_task(task_id: UUID, payload: dict) -> dict:
         task.status = TaskStatus.PROCESSING
         await session.commit()
 
-        # 2. Выполняем полезную работу
         try:
-            # Имитация тяжелой обработки (агрегация данных, парсинг, расчеты)
+            # Simulated heavy processing (data aggregation, parsing, computations).
             await asyncio.sleep(5)
 
             computed_result = {
@@ -62,7 +60,6 @@ async def process_background_task(task_id: UUID, payload: dict) -> dict:
                 "status": "success",
             }
 
-            # 3. Фиксируем успешный результат
             task.status = TaskStatus.COMPLETED
             task.result = computed_result
             await session.commit()
@@ -71,8 +68,8 @@ async def process_background_task(task_id: UUID, payload: dict) -> dict:
 
         except Exception as exc:
             logger.exception(f"Task {task_id} failed: {exc}")
-            # После ошибки текущая сессия может быть в невалидном состоянии —
-            # откатываемся и сохраняем статус в отдельной сессии.
+            # After an error the current session may be in an invalid state, so
+            # roll back and persist the status in a separate session.
             await session.rollback()
             await _mark_failed(task_id, str(exc))
             raise

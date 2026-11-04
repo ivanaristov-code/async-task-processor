@@ -19,12 +19,14 @@ class Settings(BaseSettings):
 
     # Taskiq
     TASK_MAX_RETRIES: int = 3
-    # Сколько секунд воркер ждёт сообщение в очереди (BRPOP timeout).
-    # Должно быть меньше timeout пула соединений Redis (по умолчанию 20 с),
-    # иначе redis-py 8.x роняет воркер с redis.exceptions.TimeoutError.
+
+    # Seconds the worker blocks waiting for a message (BRPOP timeout).
+    # Must be lower than the Redis connection-pool timeout (20 s by default),
+    # otherwise redis-py 8.x crashes the worker with redis.exceptions.TimeoutError.
     TASKIQ_BRPOP_TIMEOUT: int = 5
-    # redis-py по умолчанию ставит BlockingConnectionPool(timeout=20) —
-    # этот таймаут применяется и к блокирующему BRPOP. None = ждать бесконечно.
+
+    # redis-py defaults to BlockingConnectionPool(timeout=20), and that timeout
+    # also applies to the blocking BRPOP. None means wait indefinitely.
     REDIS_POOL_TIMEOUT: float | None = None
 
     @property
@@ -40,7 +42,7 @@ class Settings(BaseSettings):
 
     @property
     def redis_connection_kwargs(self) -> dict[str, float | int | None]:
-        """Общие параметры пула соединений для брокера и result backend."""
+        """Shared connection-pool options for the broker and result backend."""
         return {
             "timeout": self.REDIS_POOL_TIMEOUT,
             "socket_timeout": None,
