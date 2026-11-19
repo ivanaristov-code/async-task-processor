@@ -43,7 +43,10 @@ async def process_background_task(task_id: UUID, payload: dict) -> dict:
             logger.error(f"Task {task_id} not found in database")
             return {"status": "error", "message": "Task not found"}
 
+        # Reset any state left from a previous (failed) attempt so retries start clean.
         task.status = TaskStatus.PROCESSING
+        task.result = None
+        task.error_message = None
         await session.commit()
 
         try:

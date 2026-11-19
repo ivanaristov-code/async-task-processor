@@ -1,0 +1,16 @@
+# Web framework
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+
+# Task queue / broker
+taskiq>=0.13,<0.14
+taskiq-redis>=1.2,<2.0
+
+# Database / ORM / migrations
+sqlalchemy[asyncio]>=2.0,<2.1
+asyncpg>=0.29,<1.0
+alembic>=1.13,<2.0
+
+# Validation / settings
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3,<3.0

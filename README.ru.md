@@ -65,11 +65,17 @@ cp .env.example .env
 docker compose up --build
 ```
 
-Запускаются четыре сервиса: `postgres`, `redis`, `api` (FastAPI на `:8000`) и `worker` (Taskiq).
+Запускается стек: `postgres`, `redis`, одноразовый сервис `migrate`
+(один раз выполняет `alembic upgrade head`), затем `api` (FastAPI на `:8000`)
+и `worker` (Taskiq). Миграции применяются автоматически — ручной шаг не нужен.
 
-### 3. Применение миграций базы данных
+### 3. (Опционально) Применить миграции вручную
+
+Сервис `migrate` уже делает это при старте. Вручную:
 
 ```bash
+docker compose run --rm migrate
+# либо на запущенном стеке:
 docker compose exec api alembic upgrade head
 ```
 
@@ -115,11 +121,21 @@ curl http://localhost:8000/api/v1/tasks/<task_id>
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+
+pip install -r requirements.txt          # runtime-зависимости
+# или для разработки (добавляет ruff + pytest + httpx):
+pip install -r requirements-dev.txt
 
 # запуск API
 uvicorn app.main:app --reload
 
 # запуск воркера (в отдельном терминале)
 taskiq worker app.core.broker:broker app.tasks
+```
+
+### Тесты и линтинг
+
+```bash
+pytest          # герметичные smoke-тесты (без БД / Redis)
+ruff check .    # линтер
 ```
